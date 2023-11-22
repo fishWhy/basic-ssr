@@ -1,4 +1,11 @@
-import React, { useRef } from "react";
+import React, { useRef, use, Suspense } from "react";
+
+function Comments({comments}) {
+  const commentsResult = use(comments);
+  return Array.isArray(commentsResult) && commentsResult.map(comment => {
+    return  <p key={comment}>{comment}</p>;
+  })
+}
 
 export default function Index({comments}) {
 
@@ -20,11 +27,9 @@ export default function Index({comments}) {
         <div>
           <div>
             <p>评论</p>
-            {
-              Array.isArray(comments) && comments.map(comment => {
-                return  <p key={comment}>{comment}</p>;
-              })
-            }
+            <Suspense fallback={<div>Loading...</div>}>
+              <Comments comments={comments} />
+            </Suspense>
           </div>
         </div>
       </div>

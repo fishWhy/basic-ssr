@@ -1,7 +1,7 @@
 import React from 'react';
 import App from '../src/App';
 import HTML from '../src/html';
-import { renderToString } from 'react-dom/server';
+import { renderToPipeableStream } from 'react-dom/server';
 
 function getComments() {
   return new Promise((resolve) =>
@@ -12,13 +12,16 @@ function getComments() {
 }
 
 export default async function render(res) {
-  const comments = await getComments();
+  const comments = getComments();
 
-  res.send(
-    renderToString(
-      <HTML comments={comments}>
-        <App comments={comments} />
-      </HTML>
-    )
-  );
+  const {pipe} = renderToPipeableStream(
+    <HTML comments={comments}>
+      <App comments={comments} />
+    </HTML>,
+    {
+      onShellReady() {
+        pipe(res);
+      },
+    }
+  )
 }

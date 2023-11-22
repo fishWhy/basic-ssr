@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "npm-run-all --parallel \"dev:*\"",
     "dev:server": "cross-env NODE_ENV=development babel-node server.entry.js",
+    "dev:http2-server": "cross-env NODE_ENV=development babel-node http2Server.entry.js",
     "dev:client": "cross-env NODE_ENV=development rollup -c -w"
   },
   "keywords": [],
@@ -22,7 +23,8 @@
     "express": "^4.18.2",
     "react": "0.0.0-experimental-613e6f5fc-20230616",
     "react-dom": "0.0.0-experimental-613e6f5fc-20230616",
-    "rollup": "^3.25.1"
+    "rollup": "^3.25.1",
+    "spdy": "^4.0.2"
   },
   "devDependencies": {
     "@babel/core": "^7.22.5",

@@ -16,6 +16,11 @@
     ├── html.jsx
     └── index.jsx
 ```
+主要参考了：<br>
+[”渐进式页面渲染“：详解 React Streaming 过程](https://juejin.cn/post/7248606482014896185)<br>
+[从 新的 Suspense SSR 聊到 HTTP 分块传输](https://juejin.cn/post/7083329781919383588)<br>
+
+
 # 本地运行项目
 1. `pnpm i`安装环境。
 2. `pnpm run dev:client`打包客户端代码`src/index.jsx`到文件夹`build`。
@@ -89,4 +94,33 @@ startTransition(() => {
   }, 10000)
 })
 ```
+
+# Suspense SSR（渐进式页面渲染-React Streaming）
+
+在`src/html.jsx`中，要添加`<meta charSet="utf-8" />`，否则会报如下错误：<br>
+<img src='./image/suspense_ssr错误.jpg' width="350px"/><br>
+
+可用的链接：<br>
+
+
+[Web前端最新优化指标：FP、FCP、LCP、CLS、TTI、FID、TBT、FMP等](https://www.cnblogs.com/gg-qq/p/16178277.html)<br>
+
+使用wireshark抓包：<br>
+[Macos下的wireshark抓包权限不足问题](https://codeantenna.com/a/pRXs0yMrHD)<br>
+[45张图带你从入门到精通学习WireShark！](https://juejin.cn/post/7140935564827557896?searchId=202311221617565FD8473E973707133303)<br>
+
+
+HTTP2问题：<br>
+[当 Transfer-Encoding: chunked 遇上 HTTP2](https://zhuanlan.zhihu.com/p/598820668)<br>
+[HTTP2 下的 Transfer-Encoding: chunked](https://kiosk007.top/post/http2-%E6%94%AF%E6%8C%81%E5%88%86%E5%9D%97%E4%BC%A0%E8%BE%93/)<br>
+[http2讲解](https://http2-explained.haxx.se/zh)<br>
+[从理论到实践 全面理解HTTP/2](https://www.cnblogs.com/nuannuan7362/p/10397536.html)<br>
+[通过 Node.js, Express.js 实现 HTTP/2 Server Push](https://developer.aliyun.com/article/181579)<br>
+
+
+
+
+
+
+
 
