@@ -7,10 +7,11 @@ const clientPromise = new Promise((resolve) => {
 })
 
 startTransition(() => {
-  setTimeout(
-    () => {
-      hydrateRoot(document.getElementById('root'), <App comments={clientPromise} />)
-    },
-    5000
-  );
+  // setTimeout(
+  //   () => {
+  //     hydrateRoot(document.getElementById('root'), <App comments={clientPromise} />)
+  //   },
+  //   5000
+  // );
+  hydrateRoot(document.getElementById('root'), <App comments={clientPromise} />);
 })

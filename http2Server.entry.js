@@ -15,7 +15,9 @@ app.get('/', (req, res) => {
 
 var options = {
   key: fs.readFileSync('./ca/server.key'),
-  cert: fs.readFileSync('./ca/server.crt')
+  cert: fs.readFileSync('./ca/server.crt'),
+  // 待确定是否有效
+  protocols: [ 'h2', 'spdy/3.1', 'http/1.1' ],
 }
 
 http2.createServer(options, app).listen(3000, () => {
