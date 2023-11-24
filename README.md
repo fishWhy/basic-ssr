@@ -141,24 +141,21 @@ export default ({children,comments}) => {
   </html>
 }
 ```
-* 注意到：在3s后，`CommentsScript`组件会等到`comments`数据，传递给客户端一个`script`标签(innerHTML带有`comments`数据)，客户端会执行`script`标签中的JS代码，JS代码中会以`comments`数据为实参执行`__setComments_data`函数（函数的定义在`hydrate`代码块中），而非把`comments`数据直接赋值给一个全局变量，是因为浏览器在解析`render.js`返回的`html`代码块时，解析到`hydrate`相关代码时，要等待`comments`数据的到来，这里`__setComments_data`函数的作用就是通知`hydrate`，数据已经到来可以继续`hydrate`的后续工作了。`hydrate`相关代码块如下：
+* 注意到：在3s后，`CommentsScript`组件会等到`comments`数据，传递给客户端一个`script`标签(innerHTML带有`comments`数据)，客户端会执行`script`标签中的JS代码，JS代码中会以`comments`数据为实参执行`window.__setComments_data`函数（函数的定义在`hydrate`代码块中），而非把`comments`数据直接赋值给一个全局变量，是因为浏览器在解析`render.js`返回的`html`代码块时，解析到`hydrate`相关代码时，要等待`comments`数据的到来，这里`__setComments_data`函数的作用就是通知`hydrate`，数据已经到来可以继续`hydrate`的后续工作了。`hydrate`相关代码块如下：
 ``` javascript
 // src/index.jsx文件。
-// 客户端渲染使用的APP组件同服务端渲染，见src/App.jsx。
+// 这里客户端渲染使用的APP组件同服务端渲染，见src/App.jsx。
 const clientPromise = new Promise((resolve) => {
   window.__setComments_data = (comments) => resolve(comments)
 })
 
 startTransition(() => {
-  setTimeout(
-    () => {
-      hydrateRoot(document.getElementById('root'), <App comments={clientPromise} />)
-    },
-    5000
-  );
+  hydrateRoot(document.getElementById('root'), <App comments={clientPromise} />)
 })
 
-// 在src/App.jsx中，会把clientPromise传给Comments组件的use hook，客户端hydrate时在这里等待comments数据的到来，如下，clientPromise变成resolve状态后会完成后续的hydrate工作。
+// src/App.jsx文件， APP组件的定义
+// 会把clientPromise传给Comments组件的use hook，客户端hydrate时在这里等待comments数据的到来，如下。
+// comments数据到来后，会调用window.__setComments_data函数，clientPromise变成resolve状态，Comments组件结束等待完成后续的hydrate工作。
 function Comments({comments}) {
   const commentsResult = use(comments);
   return Array.isArray(commentsResult) && commentsResult.map(comment => {
@@ -168,7 +165,7 @@ function Comments({comments}) {
 ```
 
 4. `html`代码块中，客户端`hydrate`代码挂载：
-* 客户端hydrate代码打包：`pnpm run dev:client`打包hydrate相关代码`src/index.jsx`到文件夹`build/index.js`。
+* 客户端hydrate代码打包：`pnpm run dev:client`打包hydrate相关代码`src/index.jsx`到文件`build/index.js`。
 * 客户端hydrate代码挂载：在`/src/html.jsx`中使用script标签去请求hydrate相关代码，在`render.js`生成的`html`代码块中有`<script src="/index.js" />`。
 
 5. 客户端加载渲染：客户端获取到`html`代码块后，从上向下解析`html`代码块，执行到`<script src="/index.js">`，去请求运行`/index.js`静态文件来开始hydrate。
@@ -178,10 +175,10 @@ function Comments({comments}) {
 * 3s后，在后端服务器中，获取到`comments`数据，原src/html.jsx中`<Suspense><CommentsScript..`开始渲染`CommentsScript`组件为html片段（`comments`数据），传递给客户端，客户端解析该html片段时，会执行到`script`标签中的JS代码，JS代码把`clientPromise`变为`Promise.resolve(comments数据)`，客户端中`App`组件的子组件`Comments`不再阻塞并获取到`comments`数据，进行后续的hydrate（本文`3`中的注意部分也有该流程的相关介绍）。
 
 ## 分块传输实验
-从用户在客户端发起请求到最后完成`hydrate`的整个流程中，服务端共有两次向客户端传输`html`片段，第一次传输`render.js`渲染出的整个页面的`html`，第二次传输3s后请求到`comments`数据时渲染出的`<Suspense...`对应`html`片段，二次传输其底层实际使用的是http的分块传输技术，这里使用wireshark进行抓包实验，验证该过程。
-
-<img src="image/SuspenseSSR请求过程1.jpg" width="500px" />
-<img src="image/SuspenseSSR请求流程2.jpg" width="500px" />
+从用户在客户端发起请求到最后完成`hydrate`的整个流程中，服务端共有两次向客户端传输`html`片段，第一次传输`render.js`渲染出的整个页面的`html`，第二次传输发生在3s后请求到`comments`数据时渲染出的`<Suspense...`对应`html`片段，二次传输其底层实际使用的是http的分块传输技术（`http1.1的Transfer-Encoding: chunked`），这里使用wireshark进行抓包实验，验证该过程。<br>
+图片一：
+<img src="image/SuspenseSSR请求过程1.jpg" width="500px" /><br>
+图片二：<img src="image/SuspenseSSR请求流程2.jpg" width="500px" />
 <br>
 
 * `0.000291`时刻，用户在客户端发起`localhost:3000`请求时(`Src Port:50045, Dst Port:3000`)，使用的是`http1.1`协议，
@@ -189,8 +186,8 @@ function Comments({comments}) {
 * `0.0474471`时刻，客户端开始发起`localhost:3000/index.js`请求(`Src Port:50046, Dst Port:3000`)，去请求`hydrate`相关代码，对应文件位于服务端`build/index.js`。
 * `0.060918`时刻，服务端返回`build/index.js`文件给客户端。
 * `3.013977`时刻，服务端结束`Transfer-Encoding: chunked`的分块传输。
-<br>
-从[当 Transfer-Encoding: chunked 遇上 HTTP2](https://zhuanlan.zhihu.com/p/598820668)来看，在http2中并不能使用`renderToPipeableStream`，可以尝试使用Nignx在中间转一下（但还没有验证）。
+<br><br>
+注：从[当 Transfer-Encoding: chunked 遇上 HTTP2](https://zhuanlan.zhihu.com/p/598820668)来看，由于http2没有`Transfer-Encoding`，并不能使用`renderToPipeableStream`，可以尝试使用Nignx在中间转一下（但还没有验证是否好用）。
 
 ## 可用的链接：<br>
 
@@ -201,6 +198,7 @@ function Comments({comments}) {
 [Macos下的wireshark抓包权限不足问题](https://codeantenna.com/a/pRXs0yMrHD)<br>
 [45张图带你从入门到精通学习WireShark！](https://juejin.cn/post/7140935564827557896?searchId=202311221617565FD8473E973707133303)<br>
 
+<img src="image/wireshark抓本地包.jpg" width="300px" />
 
 HTTP2问题：<br>
 [当 Transfer-Encoding: chunked 遇上 HTTP2](https://zhuanlan.zhihu.com/p/598820668)<br>
